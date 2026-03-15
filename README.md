@@ -1,16 +1,47 @@
-# React + Vite
+# Two Sides
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+> **Two Sides is a media literacy tool that doesn't decide what is true. It shows the evidence on both sides so you can decide for yourself.**
 
-Currently, two official plugins are available:
+Most tools reduce complex claims to simple labels: True. False. Misleading. Two Sides takes a different approach — presenting the strongest supporting and contradicting evidence side-by-side, sourced from both formal reporting and the social media ecosystems where narratives often begin.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## Features
 
-## React Compiler
+- Split-panel view of supporting and contradicting evidence for any claim
+- AI-powered credibility scoring for each source
+- Chronological timeline when evidence spans multiple months
+- Sources pulled from web, news, X/Twitter, and Reddit
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## How it works
 
-## Expanding the ESLint configuration
+- **Perplexity Sonar Pro** — two parallel searches per query, one for each side
+- **Grok (xAI)** — live X/Twitter discussions and social sentiment
+- **Reddit API** — forum conversations and community reactions
+- Credibility scoring runs as a second pass once all sources are returned
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+## Built with
+
+Next.js · Tailwind CSS · TypeScript · Perplexity API · xAI Grok API · Reddit API · Vercel
+
+## Getting started
+
+Clone the repo and install dependencies:
+```bash
+git clone https://github.com/nikaxpak/twosides
+cd twosides
+npm install
+```
+
+Create a `.env.local` file in the root with the following API keys:
+```
+PERPLEXITY_API_KEY=your_perplexity_key
+XAI_API_KEY=your_xai_key
+```
+
+Then run locally:
+```bash
+npm run dev
+```
+
+Get your API keys from:
+- Perplexity: [perplexity.ai](https://perplexity.ai) → Settings → API
+- xAI Grok: [console.x.ai](https://console.x.ai)
