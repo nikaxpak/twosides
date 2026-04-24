@@ -325,9 +325,9 @@ export default function Home() {
 
   return (
     <main className="min-h-screen flex flex-col items-center px-4 py-16">
-      {/* Header */}
-      <div className="text-center mb-10">
-        <div className="flex items-center justify-center gap-0 mb-5 -ml-16">
+      {/* Header + Input */}
+      <div className="flex flex-col items-center w-full max-w-2xl mx-auto mb-8">
+        <div className="flex items-center justify-center gap-3 mb-5">
           <img
             src="/twosides_logo.png"
             alt="Two Sides"
@@ -340,12 +340,10 @@ export default function Home() {
         <p className="font-light leading-relaxed" style={{ color: "#3B3B3B" }}>
           There are always two sides to every story...
         </p>
-        <p className="font-light" style={{ color: "#3B3B3B" }}>some would say.</p>
-      </div>
+        <p className="font-light mb-10" style={{ color: "#3B3B3B" }}>some would say.</p>
 
-      {/* Input */}
-      <form onSubmit={handleSubmit} className="w-full max-w-2xl mb-8">
-        <div className="flex gap-2">
+        <form onSubmit={handleSubmit} className="w-full">
+          <div className="flex gap-2">
           <input
             type="text"
             value={query}
@@ -371,7 +369,8 @@ export default function Home() {
             )}
           </button>
         </div>
-      </form>
+        </form>
+      </div>
 
       {/* Error */}
       {error && (
