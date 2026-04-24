@@ -143,7 +143,7 @@ async function fetchRedditPosts(query: string): Promise<{ text: string; date: st
 
     const filtered = posts
       .filter((p: { data: { score: number; title: string } }) => {
-        if (p.data.score <= 50) return false;
+        if (p.data.score <= 0) return false;  // was 50
         const title = p.data.title.toLowerCase();
         return queryWords.some((word) => title.includes(word));
       })
@@ -155,7 +155,7 @@ async function fetchRedditPosts(query: string): Promise<{ text: string; date: st
         score: p.data.score,
       }));
 
-    return filtered.length >= 3 ? filtered : [];
+    return filtered.length >= 1 ? filtered : [];  // was 3
   } catch {
     return [];
   }
