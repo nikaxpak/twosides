@@ -10,5 +10,9 @@
   "assets": {
     "directory": ".open-next/assets",
     "binding": "ASSETS"
+  },
+  "vars": {
+    "PERPLEXITY_API_KEY": "",
+    "XAI_API_KEY": ""
   }
 }
