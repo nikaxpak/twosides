@@ -39,6 +39,7 @@ async function queryPerplexity(
     headers: {
       Authorization: `Bearer ${apiKey}`,
       "Content-Type": "application/json",
+      "User-Agent": "twosides/1.0 (+https://github.com/nikaxpak/twosides)",
     },
     body: JSON.stringify({
       model: "sonar-pro",
@@ -93,7 +94,15 @@ STRICT OUTPUT RULES:
 
   if (!response.ok) {
     const error = await response.text();
-    throw new Error(`Perplexity API error ${response.status}: ${error}`);
+    // Keep the headers that say which limit was hit, to debug 429s
+    const details = [...response.headers.entries()]
+      .filter(([name]) => /ratelimit|retry-after|request-id|cf-ray/i.test(name))
+      .map(([name, value]) => `${name}=${value}`)
+      .join(", ");
+    console.error("Perplexity error", response.status, details, error);
+    throw new Error(
+      `Perplexity API error ${response.status}: ${error}${details ? ` [${details}]` : ""}`
+    );
   }
 
   const data = await response.json();
