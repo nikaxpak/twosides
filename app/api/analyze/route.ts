@@ -4,13 +4,37 @@ import type { AnalysisResult, Claim, ClaimResult, Source, XPost } from "@/lib/ty
 
 const PERPLEXITY_API_URL = "https://api.perplexity.ai/chat/completions";
 
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+// Retries on 429 (rate limit) and 5xx, waiting for Retry-After when given,
+// otherwise backing off 1s, 2s, 4s with a little jitter.
+async function fetchWithRetry(
+  url: string,
+  init: RequestInit,
+  maxRetries = 3
+): Promise<Response> {
+  for (let attempt = 0; ; attempt++) {
+    const response = await fetch(url, init);
+    const retryable = response.status === 429 || response.status >= 500;
+    if (!retryable || attempt >= maxRetries) return response;
+
+    const retryAfter = Number(response.headers.get("retry-after"));
+    const waitMs =
+      Number.isFinite(retryAfter) && retryAfter > 0
+        ? Math.min(retryAfter * 1000, 10_000)
+        : 1000 * 2 ** attempt + Math.random() * 250;
+    await response.body?.cancel();
+    await sleep(waitMs);
+  }
+}
+
 async function queryPerplexity(
   prompt: string
 ): Promise<{ content: string; citations: string[] }> {
   const apiKey = process.env.PERPLEXITY_API_KEY;
   if (!apiKey) throw new Error("PERPLEXITY_API_KEY is not set");
 
-  const response = await fetch(PERPLEXITY_API_URL, {
+  const response = await fetchWithRetry(PERPLEXITY_API_URL, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${apiKey}`,
