@@ -39,8 +39,13 @@ body > * {
   animation: flip 1.5s ease-in-out infinite;
 }
 
+.flip-on-hover:hover {
+  animation: flip 1.5s ease-in-out 1;
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .animate-flip {
+  .animate-flip,
+  .flip-on-hover:hover {
     animation: none;
   }
 }

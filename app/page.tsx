@@ -306,15 +306,16 @@ function ResultPanel({
 }
 
 /** The Two Sides mark: one half filled, one half open. */
-function LogoMark({ spinning }: { spinning: boolean }) {
+function LogoMark({ spinning = false, className = "w-4 h-4" }: { spinning?: boolean; className?: string }) {
   return (
     <svg
       viewBox="0 0 16 16"
       aria-hidden
-      className={`w-4 h-4 shrink-0 ${spinning ? "animate-flip" : ""}`}
+      shapeRendering="crispEdges"
+      className={`shrink-0 ${className} ${spinning ? "animate-flip" : ""}`}
     >
-      <rect x="0" y="0" width="16" height="16" fill="#000" />
-      <rect x="9" y="2" width="5" height="12" fill="#d3d6da" />
+      <rect x="0" y="0" width="16" height="16" className="fill-ink" />
+      <rect x="9" y="2" width="5" height="12" className="fill-paper" />
     </svg>
   );
 }
@@ -368,7 +369,7 @@ export default function Home() {
       {/* Top bar */}
       <div className="grid grid-cols-12 gap-x-6 pt-5 text-[15px]">
         <p className="col-span-12 sm:col-span-6 lg:col-span-4 flex items-center gap-2">
-          <LogoMark spinning={loading} />
+          <LogoMark />
           See both sides of any claim, with sources
         </p>
       </div>
@@ -391,11 +392,17 @@ export default function Home() {
         </h1>
 
         <div className="col-span-12 lg:col-start-5 lg:col-span-8 lg:row-start-2 mt-8 lg:mt-10">
-          <p className="text-lg sm:text-xl leading-snug max-w-md">
-            There are always two sides to every story&hellip;
-            <br />
-            <span className="text-muted">some would say.</span>
-          </p>
+          <div className="flex items-start justify-between gap-6">
+            <p className="text-lg sm:text-xl leading-snug max-w-md">
+              There are always two sides to every story&hellip;
+              <br />
+              <span className="text-muted">some would say.</span>
+            </p>
+            <LogoMark
+              spinning={loading}
+              className="w-14 h-14 sm:w-20 sm:h-20 lg:w-24 lg:h-24 flip-on-hover"
+            />
+          </div>
 
           <form onSubmit={handleSubmit} className="mt-8 flex items-end gap-3 max-w-2xl">
             <label htmlFor="claim" className="sr-only">
