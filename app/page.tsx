@@ -401,11 +401,11 @@ export default function Home() {
         <p aria-hidden className="font-display font-bold text-[clamp(5rem,12vw,11rem)] leading-[0.82] tracking-[-0.02em]">
           Two
         </p>
-        <p className="mt-8 font-fell text-[clamp(1.8rem,2.8vw,2.6rem)] leading-[1.08] max-w-[22ch]">
+        <p className="mt-8 font-fell text-[clamp(1.5rem,2.2vw,2.1rem)] leading-[1.1] max-w-[26ch] text-balance">
           There are always two sides to every story&hellip; <em>some would say.</em>
         </p>
-        <figure className="mt-10 max-w-[40ch]">
-          <blockquote className="font-fell text-[24px] leading-snug">
+        <figure className="mt-8 max-w-[36ch]">
+          <blockquote className="font-fell text-[19px] leading-snug">
             &ldquo;He who knows only his own side of the case, knows little of that.&rdquo;
           </blockquote>
           <figcaption className="mt-2 text-[15px] text-muted">
