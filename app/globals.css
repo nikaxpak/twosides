@@ -2,6 +2,49 @@
 @tailwind components;
 @tailwind utilities;
 
+/* The two halves of the page */
+.side-dark {
+  --fg: #ffffff;
+  --body: #c9c9c9;
+  --side: #000000;
+  --muted: #a6a6a6;
+  --faint: #8c8c8c;
+  --rule: rgba(255, 255, 255, 0.3);
+  background: #000;
+  color: #fdfdfd;
+}
+
+.side-light {
+  --fg: #000000;
+  --body: #3a3a3a;
+  --side: #f1f1f1;
+  --muted: #565656;
+  --faint: #6b6b6b;
+  --rule: rgba(0, 0, 0, 0.22);
+  background: #f1f1f1;
+  color: #000;
+}
+
+.side-dark ::selection {
+  background: #fdfdfd;
+  color: #000;
+}
+
+.side-light ::selection {
+  background: #000;
+  color: #f1f1f1;
+}
+
+.side-dark :focus-visible {
+  outline: 2px solid #fdfdfd;
+  outline-offset: 3px;
+}
+
+.side-light :focus-visible {
+  outline: 2px solid #000;
+  outline-offset: 3px;
+}
+
 @keyframes flip {
   0% { transform: rotateY(0deg); }
   50% { transform: rotateY(180deg); }
@@ -10,4 +53,15 @@
 
 .animate-flip {
   animation: flip 1.5s ease-in-out infinite;
+}
+
+.flip-on-hover:hover {
+  animation: flip 1.5s ease-in-out 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-flip,
+  .flip-on-hover:hover {
+    animation: none;
+  }
 }

@@ -7,7 +7,30 @@ const config: Config = {
     "./app/**/*.{js,ts,jsx,tsx,mdx}",
   ],
   theme: {
-    extend: {},
+    extend: {
+      colors: {
+        ink: "#000000",
+        light: "#f1f1f1",
+        // Per-half colours, set by .side-dark / .side-light in globals.css
+        fg: "var(--fg)",
+        body: "var(--body)",
+        side: "var(--side)",
+        muted: "var(--muted)",
+        faint: "var(--faint)",
+        rule: "var(--rule)",
+        cred: {
+          high: "#3aa84b",
+          mid: "#e0a910",
+          low: "#e2493a",
+          none: "#8f8f8f",
+        },
+      },
+      fontFamily: {
+        sans: ['"Atkinson Hyperlegible Next"', "Helvetica Neue", "Arial", "sans-serif"],
+        display: ['"Barlow Condensed"', "Arial Narrow", "sans-serif"],
+        fell: ['"IM Fell English"', "Georgia", "serif"],
+      },
+    },
   },
   plugins: [],
 };

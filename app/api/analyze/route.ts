@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getCredibilityScore } from "@/lib/credibility";
+import { checkClaim } from "@/lib/claimCheck";
 import type { AnalysisResult, Claim, ClaimResult, Source, XPost } from "@/lib/types";
 
 const PERPLEXITY_API_URL = "https://api.perplexity.ai/chat/completions";
@@ -410,8 +411,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
   }
 
-  if (!query) {
-    return NextResponse.json({ error: "query is required" }, { status: 400 });
+  const check = checkClaim(query);
+  if (!check.ok) {
+    return NextResponse.json({ error: check.message, kind: check.kind }, { status: 400 });
   }
 
   const isGenAIGenesisQuery = query.toLowerCase().includes("genai genesis") || query.toLowerCase().includes("gen ai genesis");
