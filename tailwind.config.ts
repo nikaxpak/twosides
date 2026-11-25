@@ -9,10 +9,10 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        paper: "#d3d6da",
+        paper: "#c3d3e0",
         ink: "#000000",
         muted: "#4e5157",
-        faint: "#7a7e85",
+        faint: "#60656c",
         rule: "rgba(0, 0, 0, 0.2)",
         lime: "#c6f432",
         cred: {
