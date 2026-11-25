@@ -437,6 +437,17 @@ export default function Home() {
             </p>
           )}
         </div>
+        <figure className="col-span-12 lg:col-span-4 lg:row-start-3 mt-12 lg:mt-14 max-w-sm">
+          <blockquote className="text-[15px] leading-relaxed">
+            <p>
+              &ldquo;It is only by the collision of adverse opinions that the remainder of the
+              truth has any chance of being supplied.&rdquo;
+            </p>
+          </blockquote>
+          <figcaption className="mt-3 text-[13px] text-muted">
+            John Stuart Mill, <cite className="not-italic">On Liberty</cite> (1859)
+          </figcaption>
+        </figure>
       </header>
 
       {/* Results */}
