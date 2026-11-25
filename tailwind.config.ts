@@ -13,6 +13,7 @@ const config: Config = {
         light: "#f1f1f1",
         // Per-half colours, set by .side-dark / .side-light in globals.css
         fg: "var(--fg)",
+        body: "var(--body)",
         side: "var(--side)",
         muted: "var(--muted)",
         faint: "var(--faint)",

@@ -4,7 +4,8 @@
 
 /* The two halves of the page */
 .side-dark {
-  --fg: #fdfdfd;
+  --fg: #ffffff;
+  --body: #c9c9c9;
   --side: #000000;
   --muted: #a6a6a6;
   --faint: #8c8c8c;
@@ -15,6 +16,7 @@
 
 .side-light {
   --fg: #000000;
+  --body: #3a3a3a;
   --side: #f1f1f1;
   --muted: #565656;
   --faint: #6b6b6b;
