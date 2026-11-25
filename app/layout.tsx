@@ -1,8 +1,9 @@
-import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import type { Metadata, Viewport } from "next";
+import "@fontsource/pixelify-sans/500.css";
+import "@fontsource/schibsted-grotesk/400.css";
+import "@fontsource/schibsted-grotesk/500.css";
+import "@fontsource/schibsted-grotesk/600.css";
 import "./globals.css";
-
-const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: "Two Sides — Media Literacy Tool",
@@ -13,6 +14,10 @@ export const metadata: Metadata = {
   },
 };
 
+export const viewport: Viewport = {
+  themeColor: "#d3d6da",
+};
+
 export default function RootLayout({
   children,
 }: {
@@ -20,7 +25,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className={`${inter.className} bg-[#f5f5f0] text-gray-900 min-h-screen`}>
+      <body className="font-sans bg-paper text-ink min-h-screen antialiased">
         {children}
       </body>
     </html>

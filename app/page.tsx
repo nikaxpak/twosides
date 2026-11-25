@@ -6,23 +6,33 @@ import type { AnalysisResult, Claim, ClaimResult, Source, RedditThread, XPost } 
 import { getCredibilityLabel } from "@/lib/credibility";
 
 function getDotColor(score: number): string {
-  if (score >= 7) return "bg-green-500";
-  if (score >= 4) return "bg-yellow-400";
-  return "bg-red-500";
+  if (score >= 7) return "bg-cred-high";
+  if (score >= 4) return "bg-cred-mid";
+  return "bg-cred-low";
+}
+
+/** Square marker, echoing the pixel wordmark. */
+function Marker({ className }: { className: string }) {
+  return <span aria-hidden className={`block w-2 h-2 shrink-0 ${className}`} />;
 }
 
 function CredibilityDot({ source }: { source: Source }) {
   const dot = getDotColor(source.credibility);
   const label = getCredibilityLabel(source.credibility);
   return (
-    <span className="relative group inline-flex items-center shrink-0 self-start mt-[3px]">
-      <span className={`block w-2.5 h-2.5 rounded-full ${dot} cursor-default`} />
-      <span className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 z-10 hidden group-hover:flex flex-col items-center">
-        <span className="bg-gray-900 border border-gray-700 text-white text-xs rounded-lg px-3 py-2 whitespace-nowrap shadow-lg">
-          <span className="block font-semibold">{source.name}</span>
-          <span className="block text-gray-400">{source.credibility}/10 · {label}</span>
+    <span
+      tabIndex={0}
+      aria-label={`${source.name}, credibility ${source.credibility} out of 10, ${label}`}
+      className="relative group inline-flex items-center shrink-0 self-start mt-[7px] focus:outline-none"
+    >
+      <Marker className={`${dot} cursor-default`} />
+      <span className="pointer-events-none absolute bottom-full left-0 mb-2 z-10 hidden group-hover:block group-focus:block">
+        <span className="block bg-ink text-paper text-xs px-3 py-2 whitespace-nowrap">
+          <span className="block font-medium">{source.name}</span>
+          <span className="block opacity-70 tabular-nums">
+            {source.credibility}/10, {label.toLowerCase()}
+          </span>
         </span>
-        <span className="w-2 h-2 bg-gray-900 border-b border-r border-gray-700 rotate-45 -mt-1" />
       </span>
     </span>
   );
@@ -31,9 +41,10 @@ function CredibilityDot({ source }: { source: Source }) {
 function CredibilityBadge({ score }: { score: number }) {
   const label = getCredibilityLabel(score);
   return (
-    <span className="inline-flex items-center gap-1 bg-gray-700 text-white text-xs font-medium px-2 py-0.5 rounded-full">
+    <span className="inline-flex items-center gap-2 text-xs text-muted tabular-nums shrink-0">
+      <Marker className={getDotColor(score)} />
       <span>{score}/10</span>
-      <span className="hidden sm:inline text-gray-300">· {label}</span>
+      <span className="hidden sm:inline">{label}</span>
     </span>
   );
 }
@@ -44,12 +55,16 @@ function SourceCard({ source }: { source: Source }) {
       href={source.url}
       target="_blank"
       rel="noopener noreferrer"
-      className="flex items-center justify-between gap-2 p-2 rounded-lg bg-gray-100 hover:bg-gray-200 transition-colors"
+      className="group flex items-center justify-between gap-4 py-2 border-b border-rule"
     >
-      <span className="text-sm text-gray-700 truncate">{source.name}</span>
+      <span className="text-sm truncate group-hover:underline underline-offset-4">{source.name}</span>
       <CredibilityBadge score={source.credibility} />
     </a>
   );
+}
+
+function SectionLabel({ children }: { children: React.ReactNode }) {
+  return <h3 className="text-[13px] font-medium text-muted mb-3">{children}</h3>;
 }
 
 /** Format an ISO partial date string to "MMM YYYY" or "YYYY". */
@@ -109,28 +124,26 @@ function Timeline({ claims, sources }: { claims: Claim[]; sources: Source[] }) {
 
   return (
     <div className="mb-5">
-      <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">
-        Timeline
-      </h3>
+      <SectionLabel>Timeline</SectionLabel>
       <div className="relative">
         {/* Vertical connecting line */}
-        <div className="absolute left-[7px] top-2 bottom-2 w-px bg-gray-200" />
+        <div className="absolute left-[3.5px] top-2 bottom-2 w-px bg-rule" />
         <div className="space-y-3">
           {dated.map((item, i) => {
             const dotColor = item.source
               ? getDotColor(item.source.credibility)
-              : "bg-gray-300";
+              : "bg-cred-none";
             return (
               <div key={i} className="flex gap-3 items-start">
                 {/* Timeline node dot */}
-                <span
-                  className={`relative z-10 mt-0.5 w-3.5 h-3.5 rounded-full shrink-0 ${dotColor}`}
-                />
+                <span className="relative z-10 mt-[5px]">
+                  <Marker className={dotColor} />
+                </span>
                 <div className="min-w-0">
-                  <p className="text-[11px] text-gray-400 font-medium mb-0.5">
+                  <p className="text-xs text-muted tabular-nums mb-0.5">
                     {formatDate(item.date)}
                   </p>
-                  <p className="text-sm text-gray-700 truncate">
+                  <p className="text-sm truncate">
                     {plainText(item.text)}
                   </p>
                 </div>
@@ -146,35 +159,44 @@ function Timeline({ claims, sources }: { claims: Claim[]; sources: Source[] }) {
 function ResultPanel({
   side,
   title,
+  emptyText,
   result,
   redditThreads,
   xPosts,
 }: {
   side: "supporting" | "contradicting";
   title: string;
+  emptyText: string;
   result: AnalysisResult | null;
   redditThreads: RedditThread[];
   xPosts: XPost[];
 }) {
   const data: ClaimResult | undefined = result?.[side];
+  const threads = redditThreads.filter((t) => classifyThread(t.text) === side);
+  const posts = xPosts.filter((p) => p.side === side);
 
   return (
-    <div className="flex-1 border border-gray-200 rounded-xl p-5 bg-white min-w-0">
-      <div className="flex items-center gap-2 mb-4">
-        <h2 className="text-base font-bold text-gray-900">{title}</h2>
+    <section
+      aria-labelledby={`${side}-title`}
+      className={`min-w-0 py-8 lg:py-2 ${
+        side === "supporting" ? "lg:pr-10" : "border-t-2 border-ink lg:border-t-0 lg:border-l-2 lg:pl-10"
+      }`}
+    >
+      <div className="flex items-baseline justify-between gap-4 mb-6">
+        <h2 id={`${side}-title`} className="text-2xl font-medium tracking-tight">
+          {title}
+        </h2>
         {result?.grokIncluded && (
-          <span className="text-xs bg-gray-100 text-gray-400 px-2 py-0.5 rounded-full">x.com</span>
+          <span className="text-xs text-muted">Includes posts on X</span>
         )}
       </div>
 
-      {!data && (
-        <p className="text-gray-400 text-sm">Enter a claim above to see results.</p>
-      )}
+      {!data && <p className="text-sm text-muted max-w-sm">{emptyText}</p>}
 
       {data && (
         <>
           {/* Claims list — sorted oldest → newest, undated at bottom */}
-          <ul className="space-y-3 mb-5">
+          <ul className="space-y-4 mb-10 max-w-[62ch]">
             {[...data.claims]
               .filter((c) => !c.isXPost)
               .sort((a, b) => {
@@ -189,11 +211,13 @@ function ResultPanel({
                     ? data.sources[claim.sourceIndex - 1]
                     : undefined;
                 return (
-                  <li key={i} className="flex items-start gap-2 text-sm text-gray-700">
+                  <li key={i} className="flex items-start gap-3 text-[15px] leading-relaxed">
                     {source ? (
                       <CredibilityDot source={source} />
                     ) : (
-                      <span className="self-start mt-[3px] w-2.5 h-2.5 rounded-full shrink-0 bg-gray-400" />
+                      <span className="mt-[7px]">
+                        <Marker className="bg-cred-none" />
+                      </span>
                     )}
                     <span className="[&_strong]:font-semibold [&_em]:italic">
                       <ReactMarkdown components={{ p: ({ children }) => <>{children}</> }}>
@@ -204,77 +228,71 @@ function ResultPanel({
                 );
               })}
             {data.claims.filter((c) => !c.isXPost).length === 0 && (
-              <li className="text-gray-400 text-sm">No claims found.</li>
+              <li className="text-sm text-muted">No evidence found for this side.</li>
             )}
           </ul>
 
           {/* Reddit threads for this side */}
-          {redditThreads.filter((t) => classifyThread(t.text) === side).length > 0 && (
-            <div className="mb-5">
-              <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">
-                Relevant Reddit Threads
-              </h3>
-              <div className="relative">
-                <div className="absolute left-[7px] top-2 bottom-2 w-px bg-gray-200" />
-                <div className="space-y-3">
-                  {redditThreads.filter((t) => classifyThread(t.text) === side).map((thread, i) => (
-                    <a
-                      key={i}
-                      href={thread.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex gap-3 items-start group"
-                    >
-                      <span className="relative z-10 mt-0.5 w-3.5 h-3.5 rounded-full shrink-0 bg-orange-300 group-hover:bg-orange-400 transition-colors" />
-                      <div className="min-w-0 flex-1">
-                        <p className="text-[11px] text-gray-400 font-medium mb-0.5">
-                          r/{thread.subreddit} · {formatDate(thread.date)} · ↑ {thread.score}
-                        </p>
-                        <p className="text-sm text-gray-700 group-hover:text-gray-900 transition-colors">{thread.text}</p>
-                      </div>
-                    </a>
-                  ))}
-                </div>
+          {threads.length > 0 && (
+            <div className="mb-10">
+              <SectionLabel>Reddit threads</SectionLabel>
+              <div className="space-y-3">
+                {threads.map((thread, i) => (
+                  <a
+                    key={i}
+                    href={thread.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex gap-3 items-start group"
+                  >
+                    <span className="mt-[5px]">
+                      <Marker className="bg-ink" />
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-xs text-muted mb-0.5">
+                        {`r/${thread.subreddit}, ${formatDate(thread.date)}, ${thread.score} upvotes`}
+                      </p>
+                      <p className="text-sm group-hover:underline underline-offset-4">{thread.text}</p>
+                    </div>
+                  </a>
+                ))}
               </div>
             </div>
           )}
 
           {/* X Posts for this side */}
-          {xPosts.filter((p) => p.side === side).length > 0 && (
-            <div className="mb-5">
-              <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">
-                Relevant X Posts
-              </h3>
-              <div className="relative">
-                <div className="absolute left-[7px] top-2 bottom-2 w-px bg-gray-200" />
-                <div className="space-y-3">
-                  {xPosts.filter((p) => p.side === side).map((post, i) => (
-                    <div key={i} className="flex gap-3 items-start">
-                      <span className={`relative z-10 mt-0.5 w-3.5 h-3.5 rounded-full shrink-0 ${post.isVerified ? "bg-blue-400" : "bg-gray-300"}`} />
-                      <div className="min-w-0 flex-1">
-                        <p className="text-[11px] text-gray-400 font-medium mb-0.5">
-                          {post.isVerified ? "Verified" : "X Post"}
-                          {post.date ? ` · ${formatDate(post.date)}` : ""}
-                        </p>
-                        <p className="text-sm text-gray-700">{plainText(post.text)}</p>
-                      </div>
+          {posts.length > 0 && (
+            <div className="mb-10">
+              <SectionLabel>Posts on X</SectionLabel>
+              <div className="space-y-3">
+                {posts.map((post, i) => (
+                  <div key={i} className="flex gap-3 items-start">
+                    <span className="mt-[5px]">
+                      <Marker className={post.isVerified ? "bg-ink" : "bg-cred-none"} />
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-xs text-muted mb-0.5">
+                        {post.isVerified ? "Verified account" : "Post"}
+                        {post.date ? `, ${formatDate(post.date)}` : ""}
+                      </p>
+                      <p className="text-sm">{plainText(post.text)}</p>
                     </div>
-                  ))}
-                </div>
+                  </div>
+                ))}
               </div>
             </div>
           )}
 
           {/* Timeline */}
-          <Timeline claims={data.claims} sources={data.sources} />
+          <div className="mb-10 empty:hidden">
+            <Timeline claims={data.claims} sources={data.sources} />
+          </div>
 
           {/* Sources */}
           {data.sources.length > 0 && (
             <div>
-              <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">
-                Sources
-              </h3>
-              <div className="space-y-1.5">
+              <SectionLabel>Sources</SectionLabel>
+              <div className="border-t border-rule">
                 {data.sources.map((src, i) => (
                   <SourceCard key={i} source={src} />
                 ))}
@@ -283,7 +301,29 @@ function ResultPanel({
           )}
         </>
       )}
-    </div>
+    </section>
+  );
+}
+
+/** The Two Sides mark: one half filled, one half open. */
+function LogoMark({ spinning }: { spinning: boolean }) {
+  return (
+    <svg
+      viewBox="0 0 16 16"
+      aria-hidden
+      className={`w-4 h-4 shrink-0 ${spinning ? "animate-flip" : ""}`}
+    >
+      <rect x="0" y="0" width="16" height="16" fill="#000" />
+      <rect x="9" y="2" width="5" height="12" fill="#d3d6da" />
+    </svg>
+  );
+}
+
+function PixelArrow() {
+  return (
+    <svg viewBox="0 0 5 7" aria-hidden className="h-3 w-auto" shapeRendering="crispEdges">
+      <path d="M0 0h1v1H0zM1 1h1v1H1zM2 2h1v1H2zM3 3h1v1H3zM2 4h1v1H2zM1 5h1v1H1zM0 6h1v1H0z" fill="currentColor" />
+    </svg>
   );
 }
 
@@ -324,80 +364,111 @@ export default function Home() {
   }
 
   return (
-    <main className="min-h-screen flex flex-col items-center px-4 py-16">
-      {/* Header */}
-      <div className="text-center mb-10">
-        <div className="flex items-center justify-center gap-0 mb-5 -ml-16 max-w-2xl mx-auto">
-          <img
-            src="/twosides_logo.png"
-            alt="Two Sides"
-            className={`w-32 h-auto -mr-8 transition-transform ${loading ? "animate-flip" : ""}`}
-          />
-          <h1 className="text-5xl font-extrabold tracking-tight text-gray-900">
-            Two Sides
-          </h1>
-        </div>
-        <p className="font-light leading-relaxed" style={{ color: "#3B3B3B" }}>
-          There are always two sides to every story...
+    <main className="min-h-screen flex flex-col px-5 sm:px-8 lg:px-12 max-w-[1600px] mx-auto">
+      {/* Top bar */}
+      <div className="grid grid-cols-12 gap-x-6 pt-5 text-[15px]">
+        <p className="col-span-12 sm:col-span-6 lg:col-span-4 flex items-center gap-2">
+          <LogoMark spinning={loading} />
+          See both sides of any claim, with sources
         </p>
-        <p className="font-light" style={{ color: "#3B3B3B" }}>some would say.</p>
       </div>
 
-      {/* Input */}
-      <form onSubmit={handleSubmit} className="w-full max-w-2xl mx-auto mb-8">
-        <div className="flex gap-2 max-w-xl mx-auto">
-          <input
-            type="text"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="tell your story"
-            className="flex-1 bg-white border border-gray-300 rounded-lg px-4 py-3 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent"
-          />
-          <button
-            type="submit"
-            disabled={loading || !query.trim()}
-            className="px-5 py-3 bg-gray-900 hover:bg-black disabled:opacity-40 disabled:cursor-not-allowed rounded-lg text-sm font-semibold text-white transition-colors"
+      {/* Wordmark + input */}
+      <header className="grid grid-cols-12 gap-x-6 mt-10 sm:mt-14">
+        <h1 aria-label="Two Sides" className="contents font-pixel font-medium uppercase leading-[0.78] tracking-[-0.02em]">
+          <span
+            aria-hidden
+            className="col-span-12 lg:col-span-4 lg:row-start-2 text-[33vw] lg:text-[clamp(4.5rem,15vw,14rem)] lg:pt-6"
           >
-            {loading ? (
-              <span className="flex items-center gap-2">
-                <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
-                </svg>
-                Analyzing…
+            Two
+          </span>
+          <span
+            aria-hidden
+            className="col-span-12 lg:col-start-5 lg:col-span-8 lg:row-start-1 text-[33vw] lg:text-[clamp(4.5rem,22vw,21rem)] lg:text-right"
+          >
+            Sides
+          </span>
+        </h1>
+
+        <div className="col-span-12 lg:col-start-5 lg:col-span-8 lg:row-start-2 mt-8 lg:mt-10">
+          <p className="text-lg sm:text-xl leading-snug max-w-md">
+            There are always two sides to every story&hellip;
+            <br />
+            <span className="text-muted">some would say.</span>
+          </p>
+
+          <form onSubmit={handleSubmit} className="mt-8 flex items-end gap-3 max-w-2xl">
+            <label htmlFor="claim" className="sr-only">
+              Claim to analyze
+            </label>
+            <input
+              id="claim"
+              type="text"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="tell your story"
+              className="flex-1 min-w-0 bg-transparent border-0 border-b-2 border-ink px-0 py-2 text-xl placeholder:text-faint focus:outline-none focus:ring-0 focus-visible:outline-none focus:border-b-[3px]"
+            />
+            <button
+              type="submit"
+              disabled={loading || !query.trim()}
+              className="inline-flex items-center gap-2.5 h-12 pl-5 pr-4 rounded-full bg-ink text-paper text-[15px] font-medium disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              {loading ? "Analyzing…" : "Analyze"}
+              <span className="text-lime">
+                <PixelArrow />
               </span>
-            ) : (
-              "Analyze"
-            )}
-          </button>
+            </button>
+          </form>
+
+          {error && (
+            <p role="alert" className="mt-5 max-w-2xl flex gap-3 items-start text-sm">
+              <span className="mt-[5px]">
+                <Marker className="bg-cred-low" />
+              </span>
+              <span>{error}</span>
+            </p>
+          )}
         </div>
-      </form>
+      </header>
 
-      {/* Error */}
-      {error && (
-        <div className="w-full max-w-2xl mb-6 p-4 bg-white border border-gray-300 rounded-lg text-sm text-gray-700">
-          {error}
+      {/* Results */}
+      <div className="mt-20 sm:mt-28">
+        {result && (
+          <p className="text-sm text-muted mb-6">
+            Results for <span className="text-ink">&ldquo;{result.query}&rdquo;</span>
+          </p>
+        )}
+        <div className="grid grid-cols-1 lg:grid-cols-2 border-t-2 border-ink pt-8">
+          <ResultPanel
+            side="supporting"
+            title="Supporting evidence"
+            emptyText="Evidence for the claim shows up here, with each source rated for credibility."
+            result={result}
+            redditThreads={result?.redditThreads ?? []}
+            xPosts={result?.xPosts ?? []}
+          />
+          <ResultPanel
+            side="contradicting"
+            title="Contradicting evidence"
+            emptyText="Evidence against the claim shows up here, side by side with the other view."
+            result={result}
+            redditThreads={result?.redditThreads ?? []}
+            xPosts={result?.xPosts ?? []}
+          />
         </div>
-      )}
-
-      {/* Query label */}
-      {result && (
-        <p className="text-xs text-gray-400 mb-4">
-          Showing results for:{" "}
-          <span className="text-gray-600 font-medium">"{result.query}"</span>
-        </p>
-      )}
-
-      {/* Results split pane */}
-      <div className="w-full max-w-6xl flex flex-col lg:flex-row gap-4">
-        <ResultPanel side="supporting" title="Supporting Evidence" result={result} redditThreads={result?.redditThreads ?? []} xPosts={result?.xPosts ?? []} />
-        <ResultPanel side="contradicting" title="Contradicting Evidence" result={result} redditThreads={result?.redditThreads ?? []} xPosts={result?.xPosts ?? []} />
       </div>
 
       {/* Footer */}
-      <p className="mt-12 text-xs text-gray-400">
-        Powered by Perplexity Sonar Pro · Credibility scores are heuristic estimates
-      </p>
+      <footer className="mt-auto pt-24 pb-5 grid grid-cols-12 gap-x-6 gap-y-3 text-[13px] text-muted">
+        <p className="col-span-12 lg:col-span-4">Powered by Perplexity Sonar Pro</p>
+        <p className="col-span-12 lg:col-span-5 flex flex-wrap items-center gap-x-4 gap-y-1">
+          <span className="inline-flex items-center gap-1.5"><Marker className="bg-cred-high" />Credible</span>
+          <span className="inline-flex items-center gap-1.5"><Marker className="bg-cred-mid" />Mixed</span>
+          <span className="inline-flex items-center gap-1.5"><Marker className="bg-cred-low" />Low credibility</span>
+        </p>
+        <p className="col-span-12 lg:col-span-3 lg:text-right">Credibility scores are heuristic estimates</p>
+      </footer>
     </main>
   );
 }
