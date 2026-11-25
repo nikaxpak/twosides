@@ -9,22 +9,24 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        paper: "#c3d3e0",
         ink: "#000000",
-        muted: "#4e5157",
-        faint: "#60656c",
-        rule: "rgba(0, 0, 0, 0.2)",
-        lime: "#c6f432",
+        light: "#f1f1f1",
+        // Per-half colours, set by .side-dark / .side-light in globals.css
+        fg: "var(--fg)",
+        side: "var(--side)",
+        muted: "var(--muted)",
+        faint: "var(--faint)",
+        rule: "var(--rule)",
         cred: {
-          high: "#2f7d3c",
-          mid: "#c9930a",
-          low: "#c23a2b",
-          none: "#8a8e95",
+          high: "#3aa84b",
+          mid: "#e0a910",
+          low: "#e2493a",
+          none: "#8f8f8f",
         },
       },
       fontFamily: {
-        sans: ['"Schibsted Grotesk"', "Helvetica Neue", "Arial", "sans-serif"],
-        pixel: ['"Pixelify Sans"', "monospace"],
+        serif: ['"Source Serif 4"', "Georgia", "serif"],
+        display: ['"Barlow Condensed"', "Arial Narrow", "sans-serif"],
       },
     },
   },

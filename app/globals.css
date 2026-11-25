@@ -2,29 +2,43 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Film grain over the grey paper, like printed stock */
-body::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  z-index: 0;
-  pointer-events: none;
-  opacity: 0.35;
-  mix-blend-mode: multiply;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.5 0 0 0 0 0.5 0 0 0 0 0.5 0 0 0 0.9 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-}
-
-body > * {
-  position: relative;
-  z-index: 1;
-}
-
-::selection {
+/* The two halves of the page */
+.side-dark {
+  --fg: #fdfdfd;
+  --side: #000000;
+  --muted: #a6a6a6;
+  --faint: #8c8c8c;
+  --rule: rgba(255, 255, 255, 0.3);
   background: #000;
-  color: #c3d3e0;
+  color: #fdfdfd;
 }
 
-:focus-visible {
+.side-light {
+  --fg: #000000;
+  --side: #f1f1f1;
+  --muted: #565656;
+  --faint: #6b6b6b;
+  --rule: rgba(0, 0, 0, 0.22);
+  background: #f1f1f1;
+  color: #000;
+}
+
+.side-dark ::selection {
+  background: #fdfdfd;
+  color: #000;
+}
+
+.side-light ::selection {
+  background: #000;
+  color: #f1f1f1;
+}
+
+.side-dark :focus-visible {
+  outline: 2px solid #fdfdfd;
+  outline-offset: 3px;
+}
+
+.side-light :focus-visible {
   outline: 2px solid #000;
   outline-offset: 3px;
 }
