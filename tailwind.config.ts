@@ -27,6 +27,7 @@ const config: Config = {
       fontFamily: {
         serif: ['"Source Serif 4"', "Georgia", "serif"],
         display: ['"Barlow Condensed"', "Arial Narrow", "sans-serif"],
+        fell: ['"IM Fell English"', "Georgia", "serif"],
       },
     },
   },

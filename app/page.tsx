@@ -4,6 +4,7 @@ import { useState, FormEvent } from "react";
 import ReactMarkdown from "react-markdown";
 import type { AnalysisResult, Claim, ClaimResult, Source, RedditThread, XPost } from "@/lib/types";
 import { getCredibilityLabel } from "@/lib/credibility";
+import { checkClaim, EXAMPLE_CLAIM } from "@/lib/claimCheck";
 
 function getDotColor(score: number): string {
   if (score >= 7) return "bg-cred-high";
@@ -309,13 +310,22 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<AnalysisResult | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [hint, setHint] = useState<string | null>(null);
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
-    if (!query.trim() || loading) return;
+    if (loading) return;
+
+    const check = checkClaim(query);
+    if (!check.ok) {
+      setHint(check.message);
+      setError(null);
+      return;
+    }
 
     setLoading(true);
     setError(null);
+    setHint(null);
     setResult(null);
 
     try {
@@ -328,7 +338,8 @@ export default function Home() {
       const data = await res.json();
 
       if (!res.ok) {
-        setError(data.error ?? "Something went wrong");
+        if (data.kind) setHint(data.error);
+        else setError(data.error ?? "Something went wrong");
         return;
       }
 
@@ -360,9 +371,8 @@ export default function Home() {
           There are always two sides to every story&hellip; <em>some would say.</em>
         </p>
         <figure className="mt-10 max-w-[44ch]">
-          <blockquote className="text-[17px] leading-snug">
-            &ldquo;It is only by the collision of adverse opinions that the remainder of the truth
-            has any chance of being supplied.&rdquo;
+          <blockquote className="text-[22px] leading-snug">
+            &ldquo;He who knows only his own side of the case, knows little of that.&rdquo;
           </blockquote>
           <figcaption className="mt-2 text-sm text-muted">
             John Stuart Mill, <cite>On Liberty</cite> (1859)
@@ -390,18 +400,43 @@ export default function Home() {
               id="claim"
               type="text"
               value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="e.g. Coffee is bad for your health"
+              onChange={(e) => {
+                setQuery(e.target.value);
+                if (hint) setHint(null);
+              }}
+              placeholder={`e.g. ${EXAMPLE_CLAIM}`}
+              aria-describedby="claim-help"
               className="flex-1 min-w-0 bg-transparent border-0 border-b-2 border-ink px-0 py-2 text-xl placeholder:text-faint focus:outline-none focus:ring-0"
             />
             <button
               type="submit"
-              disabled={loading || !query.trim()}
+              disabled={loading}
               className="h-12 px-5 bg-ink text-light font-display text-2xl font-semibold leading-none disabled:opacity-40 disabled:cursor-not-allowed"
             >
               {loading ? "Analyzing…" : "Analyze"}
             </button>
           </div>
+          <p id="claim-help" className="mt-3 text-sm text-muted">
+            Try an example:{" "}
+            <button
+              type="button"
+              onClick={() => {
+                setQuery(EXAMPLE_CLAIM);
+                setHint(null);
+              }}
+              className="underline underline-offset-4 hover:text-fg"
+            >
+              {EXAMPLE_CLAIM}
+            </button>
+          </p>
+          {hint && (
+            <p role="status" className="mt-4 flex gap-3 items-start text-[15px]">
+              <span className="mt-[7px]">
+                <Marker className="bg-fg" />
+              </span>
+              <span>{hint}</span>
+            </p>
+          )}
           {error && (
             <p role="alert" className="mt-4 flex gap-3 items-start text-[15px]">
               <span className="mt-[7px]">
@@ -421,7 +456,7 @@ export default function Home() {
         {result ? (
           <p className="mt-3 text-sm text-muted">For &ldquo;{result.query}&rdquo;</p>
         ) : (
-          <p className="mt-3 text-[15px] text-muted max-w-[44ch]">
+          <p className="mt-4 font-fell text-[21px] leading-snug text-muted max-w-[40ch]">
             Evidence for the claim shows up on this side, with each source rated for credibility.
           </p>
         )}
@@ -439,7 +474,7 @@ export default function Home() {
         {result ? (
           <p className="mt-3 text-sm text-muted">Against &ldquo;{result.query}&rdquo;</p>
         ) : (
-          <p className="mt-3 text-[15px] text-muted max-w-[44ch]">
+          <p className="mt-4 font-fell text-[21px] leading-snug text-muted max-w-[40ch]">
             Evidence against the claim shows up on this side, facing the other view.
           </p>
         )}

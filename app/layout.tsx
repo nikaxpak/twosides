@@ -4,6 +4,7 @@ import "@fontsource/barlow-condensed/700.css";
 import "@fontsource/source-serif-4/400.css";
 import "@fontsource/source-serif-4/400-italic.css";
 import "@fontsource/source-serif-4/600.css";
+import "@fontsource/im-fell-english/400.css";
 import "./globals.css";
 
 export const metadata: Metadata = {
