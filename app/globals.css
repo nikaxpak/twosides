@@ -2,31 +2,31 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Film grain over the grey paper, like printed stock */
-body::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  z-index: 0;
-  pointer-events: none;
-  opacity: 0.35;
-  mix-blend-mode: multiply;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.5 0 0 0 0 0.5 0 0 0 0 0.5 0 0 0 0.9 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-}
-
-body > * {
-  position: relative;
-  z-index: 1;
-}
-
 ::selection {
-  background: #000;
-  color: #c3d3e0;
+  background: #f6f09e;
+  color: #020201;
 }
 
 :focus-visible {
-  outline: 2px solid #000;
+  outline: 2px solid #020201;
   outline-offset: 3px;
+}
+
+/* Red oval sticker used for the Analyze button */
+.sticker {
+  display: inline-flex;
+  padding: 5px;
+  border-radius: 9999px;
+  background: #f0453c;
+  color: #020201;
+}
+
+.sticker-inner {
+  display: inline-block;
+  padding: 0.55rem 1.6rem;
+  border-radius: 9999px;
+  border: 1px dashed #020201;
+  line-height: 1;
 }
 
 @keyframes flip {

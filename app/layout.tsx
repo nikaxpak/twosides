@@ -1,5 +1,7 @@
 import type { Metadata, Viewport } from "next";
-import "@fontsource/pixelify-sans/500.css";
+import "@fontsource/newsreader/400.css";
+import "@fontsource/newsreader/400-italic.css";
+import "@fontsource/newsreader/500.css";
 import "@fontsource/schibsted-grotesk/400.css";
 import "@fontsource/schibsted-grotesk/500.css";
 import "@fontsource/schibsted-grotesk/600.css";
@@ -15,7 +17,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#c3d3e0",
+  themeColor: "#fffff9",
 };
 
 export default function RootLayout({
@@ -25,7 +27,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className="font-sans bg-paper text-ink min-h-screen antialiased">
+      <body className="font-serif bg-paper text-ink min-h-screen antialiased">
         {children}
       </body>
     </html>
