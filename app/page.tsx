@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, FormEvent } from "react";
 import ReactMarkdown from "react-markdown";
-import type { AnalysisResult, Claim, ClaimResult, Source, RedditThread, XPost } from "@/lib/types";
+import type { AnalysisResult, ClaimResult, Source, RedditThread, XPost } from "@/lib/types";
 import { getCredibilityLabel } from "@/lib/credibility";
 import { checkClaim, EXAMPLE_CLAIM } from "@/lib/claimCheck";
 
@@ -26,7 +26,7 @@ function sourceLabel(source: Source): string {
 function CredibilityBadge({ score }: { score: number }) {
   const label = getCredibilityLabel(score);
   return (
-    <span className="inline-flex items-center gap-2 text-xs text-muted tabular-nums shrink-0">
+    <span className="inline-flex items-center gap-2 text-sm text-muted tabular-nums shrink-0">
       <Marker className={getDotColor(score)} />
       <span>{score}/10</span>
       <span className="hidden sm:inline">{label}</span>
@@ -40,9 +40,9 @@ function SourceCard({ source }: { source: Source }) {
       href={source.url}
       target="_blank"
       rel="noopener noreferrer"
-      className="group flex items-center justify-between gap-4 py-2 border-b border-rule"
+      className="group flex items-center justify-between gap-4 py-2.5 border-b border-rule"
     >
-      <span className="text-sm truncate group-hover:underline underline-offset-4">{sourceLabel(source)}</span>
+      <span className="text-[15px] truncate group-hover:underline underline-offset-4">{sourceLabel(source)}</span>
       <CredibilityBadge score={source.credibility} />
     </a>
   );
@@ -97,6 +97,19 @@ function plainText(text: string): string {
   return out.replace(/\s{2,}/g, " ").trim();
 }
 
+/** Turn API failures into something a reader can act on; keep the raw text for "Details". */
+function friendlyError(raw: string): string {
+  if (/\b429\b|rate limit/i.test(raw)) return "The evidence search is busy right now. Wait a minute, then analyze again.";
+  if (/not set|401|403/i.test(raw)) return "The evidence search isn't set up correctly. Try again later.";
+  if (/network|fetch/i.test(raw)) return "Couldn't reach the server. Check your connection and try again.";
+  return "Something went wrong while searching for evidence. Try again.";
+}
+
+/** One column of content, centred within its half so text doesn't hug the edge. */
+function Column({ children, className = "" }: { children: React.ReactNode; className?: string }) {
+  return <div className={`mx-auto w-full max-w-[680px] ${className}`}>{children}</div>;
+}
+
 function ResultPanel({
   side,
   result,
@@ -116,42 +129,52 @@ function ResultPanel({
 
   if (loading) {
     return (
-      <p className="font-fell text-[21px] text-muted animate-pulse motion-reduce:animate-none">
+      <p className="font-fell text-[22px] text-muted animate-pulse motion-reduce:animate-none">
         {side === "supporting" ? "Looking for evidence for the claim…" : "Looking for evidence against it…"}
       </p>
     );
   }
   if (!data) return null;
 
+  const claims = [...data.claims]
+    .filter((c) => !c.isXPost)
+    .sort((a, b) => {
+      if (!a.date && !b.date) return 0;
+      if (!a.date) return 1;
+      if (!b.date) return -1;
+      return sortKey(a.date).localeCompare(sortKey(b.date));
+    });
+
   return (
     <>
-      {/* Claims list — sorted oldest → newest, undated at bottom */}
-      <ul className="space-y-7 mb-14 max-w-[62ch]">
-        {[...data.claims]
-          .filter((c) => !c.isXPost)
-          .sort((a, b) => {
-            if (!a.date && !b.date) return 0;
-            if (!a.date) return 1;
-            if (!b.date) return -1;
-            return sortKey(a.date).localeCompare(sortKey(b.date));
-          })
-          .map((claim, i) => {
+      {/* Claims as a timeline: date in the gutter, credibility marker on the line */}
+      {claims.length === 0 ? (
+        <p className="mb-14 text-[18px] text-body">No evidence found for this side.</p>
+      ) : (
+        <ol className="mb-14">
+          {claims.map((claim, i) => {
             const source =
               claim.sourceIndex != null ? data.sources[claim.sourceIndex - 1] : undefined;
+            const last = i === claims.length - 1;
             return (
-              <li key={i} className="flex items-start gap-3">
-                <span className="mt-[11px]">
-                  <Marker className={source ? getDotColor(source.credibility) : "bg-cred-none"} />
-                </span>
-                <div className="min-w-0">
+              <li key={i} className="grid grid-cols-[3.75rem_1fr] sm:grid-cols-[5.25rem_1fr] gap-x-4 sm:gap-x-5">
+                <p className="pt-[1px] text-right font-display text-[19px] sm:text-[22px] font-semibold leading-[1.75rem] tabular-nums">
+                  {claim.date ? formatDate(claim.date) : <span className="text-muted">Undated</span>}
+                </p>
+                <div className={`relative pl-6 border-l border-rule ${last ? "pb-1" : "pb-8"}`}>
+                  <span className="absolute -left-[5px] top-[10px]">
+                    <span
+                      aria-hidden
+                      className={`block w-[9px] h-[9px] ${source ? getDotColor(source.credibility) : "bg-cred-none"}`}
+                    />
+                  </span>
                   {/* Perplexity bolds long phrases; mark them with full-contrast colour instead of weight */}
-                  <p className="text-[17px] leading-[1.65] text-body [&_strong]:font-normal [&_strong]:text-fg [&_em]:italic">
+                  <p className="text-[18px] leading-[1.6] text-body [&_strong]:font-normal [&_strong]:text-fg [&_em]:italic">
                     <ReactMarkdown components={{ p: ({ children }) => <>{children}</> }}>
                       {cleanClaimText(claim.text)}
                     </ReactMarkdown>
                   </p>
-                  <p className="mt-1.5 flex flex-wrap gap-x-3 gap-y-0.5 text-sm text-muted">
-                    {claim.date && <span className="tabular-nums">{formatDate(claim.date)}</span>}
+                  <p className="mt-2 flex flex-wrap gap-x-3 gap-y-0.5 text-[15px] text-muted">
                     {source ? (
                       <>
                         <a
@@ -174,32 +197,19 @@ function ResultPanel({
               </li>
             );
           })}
-        {data.claims.filter((c) => !c.isXPost).length === 0 && (
-          <li className="text-muted">No evidence found for this side.</li>
-        )}
-      </ul>
+        </ol>
+      )}
 
       {threads.length > 0 && (
         <div className="mb-12">
           <SectionLabel>Reddit threads</SectionLabel>
-          <div className="space-y-3">
+          <div className="space-y-4">
             {threads.map((thread, i) => (
-              <a
-                key={i}
-                href={thread.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex gap-3 items-start group"
-              >
-                <span className="mt-[6px]">
-                  <Marker className="bg-fg" />
-                </span>
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm text-muted mb-0.5">
-                    {`r/${thread.subreddit}, ${formatDate(thread.date)}, ${thread.score} upvotes`}
-                  </p>
-                  <p className="text-[15px] group-hover:underline underline-offset-4">{thread.text}</p>
-                </div>
+              <a key={i} href={thread.url} target="_blank" rel="noopener noreferrer" className="block group">
+                <p className="text-[17px] leading-snug group-hover:underline underline-offset-4">{thread.text}</p>
+                <p className="mt-1 text-[15px] text-muted">
+                  {`r/${thread.subreddit}, ${formatDate(thread.date)}, ${thread.score} upvotes`}
+                </p>
               </a>
             ))}
           </div>
@@ -209,25 +219,19 @@ function ResultPanel({
       {posts.length > 0 && (
         <div className="mb-12">
           <SectionLabel>Posts on X</SectionLabel>
-          <div className="space-y-3">
+          <div className="space-y-4">
             {posts.map((post, i) => (
-              <div key={i} className="flex gap-3 items-start">
-                <span className="mt-[6px]">
-                  <Marker className={post.isVerified ? "bg-fg" : "bg-cred-none"} />
-                </span>
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm text-muted mb-0.5">
-                    {post.isVerified ? "Verified account" : "Post"}
-                    {post.date ? `, ${formatDate(post.date)}` : ""}
-                  </p>
-                  <p className="text-[15px]">{plainText(post.text)}</p>
-                </div>
+              <div key={i}>
+                <p className="text-[17px] leading-snug">{plainText(post.text)}</p>
+                <p className="mt-1 text-[15px] text-muted">
+                  {post.isVerified ? "Verified account" : "Post"}
+                  {post.date ? `, ${formatDate(post.date)}` : ""}
+                </p>
               </div>
             ))}
           </div>
         </div>
       )}
-
 
       {data.sources.length > 0 && (
         <details className="group">
@@ -273,20 +277,51 @@ function SeamMark({ spinning, framed = false }: { spinning: boolean; framed?: bo
   );
 }
 
+const STORAGE_KEY = "twosides:last";
+
 export default function Home() {
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<AnalysisResult | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [errorDetail, setErrorDetail] = useState<string | null>(null);
   const [hint, setHint] = useState<string | null>(null);
   const resultsRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const restored = useRef(false);
+
+  // Reopen the last search when someone comes back
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        const last = JSON.parse(saved) as AnalysisResult;
+        restored.current = true;
+        setResult(last);
+        setQuery(last.query);
+      }
+    } catch {
+      /* storage unavailable: start fresh */
+    }
+  }, []);
 
   // Bring the results into view when a search starts and when it finishes
   useEffect(() => {
     if (!loading && !result) return;
+    if (restored.current) {
+      restored.current = false;
+      return;
+    }
     const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     resultsRef.current?.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "start" });
   }, [loading, result]);
+
+  function newClaim() {
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    window.scrollTo({ top: 0, behavior: reduce ? "auto" : "smooth" });
+    inputRef.current?.focus({ preventScroll: true });
+    inputRef.current?.select();
+  }
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -301,6 +336,7 @@ export default function Home() {
 
     setLoading(true);
     setError(null);
+    setErrorDetail(null);
     setHint(null);
     setResult(null);
 
@@ -314,20 +350,42 @@ export default function Home() {
       const data = await res.json();
 
       if (!res.ok) {
-        if (data.kind) setHint(data.error);
-        else setError(data.error ?? "Something went wrong");
+        if (data.kind) {
+          setHint(data.error);
+        } else {
+          const raw = String(data.error ?? `HTTP ${res.status}`);
+          setError(friendlyError(raw));
+          setErrorDetail(raw);
+        }
         return;
       }
 
       setResult(data as AnalysisResult);
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+      } catch {
+        /* storage full or blocked: nothing to do */
+      }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Network error");
+      const raw = err instanceof Error ? err.message : "Network error";
+      setError(friendlyError(`network ${raw}`));
+      setErrorDetail(raw);
     } finally {
       setLoading(false);
     }
   }
 
-  const cell = "px-3 sm:px-4";
+  const cell = "px-4 sm:px-6";
+  const panels = (side: "supporting" | "contradicting") => (
+    <ResultPanel
+      side={side}
+      result={result}
+      loading={loading}
+      redditThreads={result?.redditThreads ?? []}
+      xPosts={result?.xPosts ?? []}
+    />
+  );
+  const sourceCount = (side: "supporting" | "contradicting") => result?.[side].sources.length ?? 0;
 
   return (
     <main className="relative min-h-screen grid grid-cols-1 lg:grid-cols-2 lg:grid-rows-[auto_auto_1fr_auto]">
@@ -343,14 +401,14 @@ export default function Home() {
         <p aria-hidden className="font-display font-bold text-[clamp(5rem,12vw,11rem)] leading-[0.82] tracking-[-0.02em]">
           Two
         </p>
-        <p className="mt-8 text-[clamp(1.6rem,2.6vw,2.4rem)] leading-[1.05] max-w-[22ch]">
+        <p className="mt-8 font-fell text-[clamp(1.8rem,2.8vw,2.6rem)] leading-[1.08] max-w-[22ch]">
           There are always two sides to every story&hellip; <em>some would say.</em>
         </p>
-        <figure className="mt-10 max-w-[44ch]">
-          <blockquote className="text-[22px] leading-snug">
+        <figure className="mt-10 max-w-[40ch]">
+          <blockquote className="font-fell text-[24px] leading-snug">
             &ldquo;He who knows only his own side of the case, knows little of that.&rdquo;
           </blockquote>
-          <figcaption className="mt-2 text-sm text-muted">
+          <figcaption className="mt-2 text-[15px] text-muted">
             John Stuart Mill, <cite>On Liberty</cite> (1859)
           </figcaption>
         </figure>
@@ -368,11 +426,12 @@ export default function Home() {
         </div>
 
         <form onSubmit={handleSubmit} className="mt-8 max-w-xl">
-          <label htmlFor="claim" className="block text-[clamp(1.6rem,2.6vw,2.4rem)] leading-[1.05] mb-4">
+          <label htmlFor="claim" className="block font-fell text-[clamp(1.8rem,2.8vw,2.6rem)] leading-[1.08] mb-4">
             Tell your story.
           </label>
           <div className="flex items-end gap-3">
             <input
+              ref={inputRef}
               id="claim"
               type="text"
               value={query}
@@ -382,100 +441,131 @@ export default function Home() {
               }}
               placeholder={`e.g. ${EXAMPLE_CLAIM}`}
               aria-describedby="claim-help"
-              className="flex-1 min-w-0 bg-transparent border-0 border-b-2 border-ink px-0 py-2 text-xl placeholder:text-faint focus:outline-none focus:ring-0"
+              autoComplete="off"
+              enterKeyHint="search"
+              className="flex-1 min-w-0 bg-transparent border-0 border-b-2 border-ink px-0 py-2 text-xl placeholder:text-faint focus:outline-none focus:ring-0 focus:border-b-[3px]"
             />
             <button
               type="submit"
               disabled={loading}
-              className="h-12 px-5 bg-ink text-light font-display text-2xl font-semibold leading-none disabled:opacity-40 disabled:cursor-not-allowed"
+              className="h-14 px-6 bg-ink text-light font-display text-[26px] font-semibold leading-none hover:bg-[#2a2a2a] active:translate-y-px disabled:opacity-50 disabled:cursor-progress"
             >
               {loading ? "Analyzing…" : "Analyze"}
             </button>
           </div>
-          <p id="claim-help" className="mt-3 text-sm text-muted">
-            Try an example:{" "}
-            <button
-              type="button"
-              onClick={() => {
-                setQuery(EXAMPLE_CLAIM);
-                setHint(null);
-              }}
-              className="underline underline-offset-4 hover:text-fg"
-            >
-              {EXAMPLE_CLAIM}
-            </button>
+          <p id="claim-help" className="mt-3 text-[15px] text-muted">
+            {loading ? (
+              "This usually takes 10 to 20 seconds."
+            ) : (
+              <>
+                Try an example:{" "}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setQuery(EXAMPLE_CLAIM);
+                    setHint(null);
+                  }}
+                  className="underline underline-offset-4 hover:text-fg"
+                >
+                  {EXAMPLE_CLAIM}
+                </button>
+              </>
+            )}
           </p>
           {hint && (
-            <p role="status" className="mt-4 flex gap-3 items-start text-[15px]">
-              <span className="mt-[7px]">
+            <p role="status" className="mt-4 flex gap-3 items-start text-[16px]">
+              <span className="mt-[8px]">
                 <Marker className="bg-fg" />
               </span>
               <span>{hint}</span>
             </p>
           )}
           {error && (
-            <p role="alert" className="mt-4 flex gap-3 items-start text-[15px]">
-              <span className="mt-[7px]">
-                <Marker className="bg-cred-low" />
-              </span>
-              <span>{error}</span>
-            </p>
+            <div role="alert" className="mt-4 text-[16px]">
+              <p className="flex gap-3 items-start">
+                <span className="mt-[8px]">
+                  <Marker className="bg-cred-low" />
+                </span>
+                <span>{error}</span>
+              </p>
+              {errorDetail && (
+                <details className="mt-2 ml-5 text-sm text-muted">
+                  <summary className="cursor-pointer">Details</summary>
+                  <p className="mt-1 break-words">{errorDetail}</p>
+                </details>
+              )}
+            </div>
           )}
         </form>
       </section>
 
       {/* Row 2: side headings */}
-      <div ref={resultsRef} className={`side-dark ${cell} pt-6 pb-8 border-t border-rule scroll-mt-0`}>
-        <h2 className="font-display font-bold text-[clamp(2.5rem,5vw,4.5rem)] leading-[0.9]">
-          Supporting evidence
-        </h2>
-        {result ? (
-          <p className="mt-3 text-sm text-muted">For &ldquo;{result.query}&rdquo;</p>
-        ) : loading ? null : (
-          <p className="mt-4 font-fell text-[21px] leading-snug text-muted max-w-[40ch]">
-            Evidence for the claim shows up on this side, with each source rated for credibility.
-          </p>
-        )}
+      <div ref={resultsRef} className={`side-dark ${cell} pt-8 pb-8 border-t border-rule`}>
+        <Column>
+          <h2 className="font-display font-bold text-[clamp(2.5rem,4.5vw,4rem)] leading-[0.9]">
+            Supporting evidence
+          </h2>
+          {result ? (
+            <p className="mt-3 text-[15px] text-muted">
+              For &ldquo;{result.query}&rdquo;, from {sourceCount("supporting")} sources
+            </p>
+          ) : loading ? null : (
+            <p className="mt-4 font-fell text-[22px] leading-snug text-muted max-w-[40ch]">
+              Evidence for the claim shows up on this side, with each source rated for credibility.
+            </p>
+          )}
+        </Column>
       </div>
 
       {/* On mobile the supporting results follow their heading */}
       <div className={`side-dark ${cell} pb-12 lg:hidden`}>
-        <ResultPanel side="supporting" result={result} loading={loading} redditThreads={result?.redditThreads ?? []} xPosts={result?.xPosts ?? []} />
+        <Column>{panels("supporting")}</Column>
       </div>
 
-      <div className={`side-light ${cell} pt-6 pb-8 border-t border-rule`}>
-        <h2 className="font-display font-bold text-[clamp(2.5rem,5vw,4.5rem)] leading-[0.9]">
-          Contradicting evidence
-        </h2>
-        {result ? (
-          <p className="mt-3 text-sm text-muted">Against &ldquo;{result.query}&rdquo;</p>
-        ) : loading ? null : (
-          <p className="mt-4 font-fell text-[21px] leading-snug text-muted max-w-[40ch]">
-            Evidence against the claim shows up on this side, facing the other view.
-          </p>
-        )}
+      <div className={`side-light ${cell} pt-8 pb-8 border-t border-rule`}>
+        <Column>
+          <div className="flex items-baseline justify-between gap-4">
+            <h2 className="font-display font-bold text-[clamp(2.5rem,4.5vw,4rem)] leading-[0.9]">
+              Contradicting evidence
+            </h2>
+          </div>
+          {result ? (
+            <p className="mt-3 text-[15px] text-muted">
+              Against &ldquo;{result.query}&rdquo;, from {sourceCount("contradicting")} sources
+            </p>
+          ) : loading ? null : (
+            <p className="mt-4 font-fell text-[22px] leading-snug text-muted max-w-[40ch]">
+              Evidence against the claim shows up on this side, facing the other view.
+            </p>
+          )}
+        </Column>
       </div>
 
       {/* Row 3: results (desktop keeps both halves aligned) */}
       <div className={`side-dark ${cell} pb-16 hidden lg:block`}>
-        <ResultPanel side="supporting" result={result} loading={loading} redditThreads={result?.redditThreads ?? []} xPosts={result?.xPosts ?? []} />
+        <Column>{panels("supporting")}</Column>
       </div>
       <div className={`side-light ${cell} pb-16`}>
-        <ResultPanel side="contradicting" result={result} loading={loading} redditThreads={result?.redditThreads ?? []} xPosts={result?.xPosts ?? []} />
+        <Column>
+          {panels("contradicting")}
+          {result && (
+            <button
+              type="button"
+              onClick={newClaim}
+              className="mt-12 h-12 px-5 border-2 border-ink font-display text-[22px] font-semibold leading-none hover:bg-ink hover:text-light"
+            >
+              Check another claim
+            </button>
+          )}
+        </Column>
       </div>
 
       {/* Row 4: footer */}
-      <footer className={`side-dark ${cell} py-3 flex flex-wrap items-end justify-between gap-x-6 gap-y-1`}>
-        <span className="font-display text-2xl font-semibold leading-none">Two Sides</span>
-        <span className="text-sm text-muted">Powered by Perplexity Sonar Pro</span>
+      <footer className={`side-dark ${cell} py-4 text-[15px] text-muted`}>
+        Powered by Perplexity Sonar Pro
       </footer>
-      <div className={`side-light ${cell} py-3 flex flex-wrap items-end justify-between gap-x-6 gap-y-1 text-sm`}>
-        <span className="flex flex-wrap gap-x-4 gap-y-1">
-          <span className="inline-flex items-center gap-1.5"><Marker className="bg-cred-high" />Credible</span>
-          <span className="inline-flex items-center gap-1.5"><Marker className="bg-cred-mid" />Mixed</span>
-          <span className="inline-flex items-center gap-1.5"><Marker className="bg-cred-low" />Low credibility</span>
-        </span>
-        <span className="text-muted">Credibility scores are heuristic estimates</span>
+      <div className={`side-light ${cell} py-4 text-[15px] text-muted lg:text-right`}>
+        Credibility scores are estimates based on each source&rsquo;s domain
       </div>
     </main>
   );

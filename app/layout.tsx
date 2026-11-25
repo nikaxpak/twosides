@@ -1,10 +1,11 @@
 import type { Metadata, Viewport } from "next";
 import "@fontsource/barlow-condensed/600.css";
 import "@fontsource/barlow-condensed/700.css";
-import "@fontsource/source-serif-4/400.css";
-import "@fontsource/source-serif-4/400-italic.css";
-import "@fontsource/source-serif-4/600.css";
+import "@fontsource/atkinson-hyperlegible-next/400.css";
+import "@fontsource/atkinson-hyperlegible-next/400-italic.css";
+import "@fontsource/atkinson-hyperlegible-next/600.css";
 import "@fontsource/im-fell-english/400.css";
+import "@fontsource/im-fell-english/400-italic.css";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -27,7 +28,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className="font-serif bg-light text-ink min-h-screen antialiased">
+      <body className="font-sans bg-light text-ink min-h-screen antialiased">
         {children}
       </body>
     </html>
